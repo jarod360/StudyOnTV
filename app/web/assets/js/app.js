@@ -70,7 +70,7 @@
       if (result.watching) {
         state.lockReason = '';
         show('lock'); $('lockTitle').textContent = '已解锁使用时间';
-        $('lockDesc').textContent = '还可以使用 ' + Math.ceil(state.learning.remainingSeconds / 60) + ' 分钟';
+        $('lockDesc').textContent = result.parentMode ? '家长免答题中，请返回桌面' : '还可以使用 ' + Math.ceil(state.learning.remainingSeconds / 60) + ' 分钟';
         $('lockIcon').textContent = '✓'; $('lockNote').textContent = '';
         $('lockActions').innerHTML = '<button class="btn btn-primary focusable" data-action="home">返回桌面</button>';
         focusDefault(); return;

@@ -57,7 +57,8 @@ class LearningEngine(private val store: LocalStore) {
         val remaining = number("credit_ms")
         val used = number("used_ms")
         val rounds = store.roundsDoneToday()
-        val reason = when {
+        val parentActive = ParentMode.active(store)
+        val reason = if (parentActive) "" else when {
             used >= c.getLong("dailyMinutes") * 60000 -> "quota"
             remaining <= 0 && rounds >= c.getInt("roundsPerDay") -> "rounds"
             !inWindow(c) -> "schedule"
@@ -67,12 +68,14 @@ class LearningEngine(private val store: LocalStore) {
         val nextAt = if (reason in listOf("quota", "rounds", "schedule")) nextAvailable(c, reason != "schedule") else 0L
         return JSONObject().put("remainingSeconds", remaining / 1000).put("usedMinutes", used / 60000.0)
             .put("extraPool", number("extra_pool")).put("wrongProgress", number("wrong_progress"))
+            .put("parentModeActive", parentActive).put("parentModeUntil", ParentMode.until(store))
             .put("nextAvailableAt", nextAt)
             .put("roundsDoneToday", rounds).put("reason", reason).put("awaitingReview", active()?.has("pendingReview") == true)
     }
 
     @Synchronized
     fun consume(milliseconds: Long) {
+        if (ParentMode.active(store)) return
         day()
         val amount = min(milliseconds.coerceIn(0, 5000), min(number("credit_ms"),
             (store.config().getLong("dailyMinutes") * 60000 - number("used_ms")).coerceAtLeast(0)))
@@ -113,6 +116,7 @@ class LearningEngine(private val store: LocalStore) {
     fun start(): JSONObject {
         val st = status()
         val c = store.config()
+        if (ParentMode.active(store)) return JSONObject().put("watching", true).put("parentMode", true).put("status", st)
         val feedbackId = store.get("review_feedback")
         val feedback = feedbackId.takeIf { it.isNotEmpty() }?.let { store.review(it) }
         if (feedback?.optString("state") == "graded") return JSONObject().put("reviewed", true).put("status", st)

@@ -1,6 +1,10 @@
 package com.studyontv.tv
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -93,6 +97,9 @@ class OnboardingActivity : Activity() {
             },
             permission("后台运行", "减少系统清理，适合电视常驻", android.R.drawable.ic_lock_idle_alarm, null) {
                 openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true)
+            },
+            permission("防卸载", "需电视确认设备管理员授权", android.R.drawable.ic_lock_lock, { adminActive() }) {
+                toggleDeviceAdmin()
             }
         )
         val columns = if (resources.displayMetrics.widthPixels / resources.displayMetrics.density >= 720) 2 else 1
@@ -113,6 +120,30 @@ class OnboardingActivity : Activity() {
         })
         if (tv) next.requestFocus()
         refresh()
+    }
+
+    private fun adminActive(): Boolean = DeviceAdminState.active(this)
+
+    private fun toggleDeviceAdmin() {
+        val component = ComponentName(this, StudyDeviceAdminReceiver::class.java)
+        val policy = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        if (policy.isAdminActive(component)) {
+            AlertDialog.Builder(this).setTitle("关闭防卸载")
+                .setMessage("关闭后可正常卸载应用，确定解除管理员授权吗？")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("解除") { _, _ ->
+                    try { policy.removeActiveAdmin(component); refresh() }
+                    catch (_: Exception) { Toast.makeText(this, "请到系统设备管理员设置中解除", Toast.LENGTH_LONG).show() }
+                }.show()
+        } else {
+            try {
+                startActivity(Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+                    .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "启用后，卸载前需要先解除管理员授权。"))
+            } catch (_: Exception) {
+                Toast.makeText(this, "电视不提供设备管理员授权页面，无法开启", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun permission(title: String, description: String, icon: Int, enabled: (() -> Boolean)?, action: () -> Unit): View {

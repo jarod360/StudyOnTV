@@ -145,6 +145,13 @@ class LanServer(
                         .put("repetition", store.repetitionStats())
                         .put("learning", DeviceRuntime.learning.status()))
             }
+            path == "/api/parent-mode" && method == "GET" ->
+                return json(out, 200, ParentMode.status(store).put("deviceAdminActive", DeviceAdminState.active(context)))
+            path == "/api/parent-mode" && method == "POST" -> {
+                ParentMode.set(store, JSONObject(body).getInt("minutes"))
+                GateService.hideGates()
+                return json(out, 200, ParentMode.status(store).put("deviceAdminActive", DeviceAdminState.active(context)))
+            }
             path == "/api/config" && method == "PUT" -> {
                 val input = try { JSONObject(body) } catch (e: Exception) { return json(out, 200, err("bad_json")) }
                 return json(out, 200, JSONObject().put("config", store.saveConfig(input)))
@@ -228,6 +235,7 @@ class LanServer(
     private fun serveStatic(path: String, out: OutputStream) {
         val (assetPath, contentType) = when {
             path == "/" || path == "/index.html" -> "web/index.html" to "text/html; charset=utf-8"
+            path == "/admin/parent-mode" -> "admin/parent-mode.html" to "text/html; charset=utf-8"
             path.startsWith("/admin/assets/") -> "admin" + path.removePrefix("/admin") to mime(path)
             path.startsWith("/admin") -> "admin/index.html" to "text/html; charset=utf-8"
             path.startsWith("/assets/") -> "web" + path to mime(path)

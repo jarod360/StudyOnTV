@@ -3,6 +3,8 @@ package com.studyontv.tv
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -14,6 +16,17 @@ open class MainActivity : Activity() {
     private var page = "quiz"
     private var upCount = 0
     private var lastUp = 0L
+    private val parentHandler = Handler(Looper.getMainLooper())
+    private val parentCheck = object : Runnable {
+        override fun run() {
+            if (isFinishing) return
+            if (ParentMode.active(DeviceRuntime.store)) {
+                startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                if (this@MainActivity is GateActivity) finish() else moveTaskToBack(true)
+            } else parentHandler.postDelayed(this, 1000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +83,8 @@ open class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        parentHandler.removeCallbacks(parentCheck)
+        parentHandler.post(parentCheck)
         if (webReleased) createWeb()
         if (::web.isInitialized && !webReleased) web.evaluateJavascript("window.SOTV_RESUME&&SOTV_RESUME()", null)
     }
@@ -100,7 +115,13 @@ open class MainActivity : Activity() {
         return true
     }
 
+    override fun onPause() {
+        parentHandler.removeCallbacks(parentCheck)
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        parentHandler.removeCallbacks(parentCheck)
         if (::web.isInitialized && !webReleased) web.destroy()
         super.onDestroy()
     }

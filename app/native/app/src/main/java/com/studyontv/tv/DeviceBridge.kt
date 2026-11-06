@@ -35,7 +35,8 @@ open class DeviceBridge(protected val activity: Activity, private val connection
     @JavascriptInterface
     fun exitToLauncher() {
         val status = DeviceRuntime.learning.status()
-        if (status.getString("reason").isNotEmpty() || status.optLong("remainingSeconds") <= 0) return
+        if (!ParentMode.active(DeviceRuntime.store) &&
+            (status.getString("reason").isNotEmpty() || status.optLong("remainingSeconds") <= 0)) return
         activity.runOnUiThread {
             GateService.hideGates()
             activity.startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

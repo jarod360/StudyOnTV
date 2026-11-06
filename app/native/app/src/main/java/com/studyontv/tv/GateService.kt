@@ -42,6 +42,12 @@ class GateService : Service() {
         val now = SystemClock.elapsedRealtime()
         val elapsed = now - lastTick
         lastTick = now
+        if (ParentMode.active(DeviceRuntime.store)) {
+            wasUsing = false
+            updateAnchor(false)
+            hideAll()
+            return
+        }
         if (wasUsing) DeviceRuntime.learning.consume(elapsed)
         val canOverlay = GateOverlay.canDraw(this)
         updateAnchor(canOverlay)

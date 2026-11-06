@@ -1,0 +1,37 @@
+name: Build personal TV APK
+on:
+  push:
+    branches: [feat/parent-bypass-and-device-admin]
+  workflow_dispatch:
+jobs:
+  tv:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile Android TV
+        run: gradle -p app/native :app:assembleTvRelease --no-daemon
+      - name: Sign APK for personal testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          keytool -genkeypair -noprompt -keystore personal-test.jks -storepass android -keypass android -alias personal -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Personal Test"
+          tools="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          "$tools/zipalign" -f -p 4 app/native/app/build/outputs/apk/tv/release/app-tv-release-unsigned.apk dist/aligned.apk
+          "$tools/apksigner" sign --ks personal-test.jks --ks-pass pass:android --key-pass pass:android --out dist/StudyOnTV-TV-family-test.apk dist/aligned.apk
+          "$tools/apksigner" verify --verbose dist/StudyOnTV-TV-family-test.apk
+          rm dist/aligned.apk personal-test.jks
+          (cd dist && sha256sum StudyOnTV-TV-family-test.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyOnTV-TV-family-test
+          path: dist/
