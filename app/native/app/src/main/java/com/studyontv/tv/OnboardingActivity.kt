@@ -176,7 +176,7 @@ class OnboardingActivity : Activity() {
                 }.show()
         } else {
             try {
-                // Temporarily suspend app gating while the OEM device-admin consent UI is in front.
+                // Remove both the gate and its 1x1 overlay anchor before OEM admin consent.
                 GateService.openingSystemPage()
                 startActivity(Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
                     .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)

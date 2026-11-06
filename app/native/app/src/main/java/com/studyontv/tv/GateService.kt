@@ -42,7 +42,7 @@ class GateService : Service() {
         val now = SystemClock.elapsedRealtime()
         val elapsed = now - lastTick
         lastTick = now
-        if (ParentMode.active(DeviceRuntime.store)) {
+        if (ParentMode.active(DeviceRuntime.store) || now < settingsUntil) {
             wasUsing = false
             updateAnchor(false)
             hideAll()
@@ -57,7 +57,6 @@ class GateService : Service() {
             overlay.suspend(); WatchAccessibilityService.suspendGate()
             return
         }
-        if (now < settingsUntil) { wasUsing = false; hideAll(); return }
         val power = getSystemService(POWER_SERVICE) as PowerManager
         val locked = (getSystemService(KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked
         val awake = power.isInteractive && !locked
@@ -160,6 +159,15 @@ class GateService : Service() {
             instance?.let { service ->
                 service.settingsUntil = SystemClock.elapsedRealtime() + 120000
                 service.wasUsing = false
+                // Sensitive Android system consent UIs must not have our 1x1 overlay anchor.
+                // Remove it before starting the OEM Activity, and do not recreate during grace.
+                if (Looper.myLooper() == Looper.getMainLooper()) {
+                    service.updateAnchor(false)
+                    service.hideAll()
+                } else service.handler.post {
+                    service.updateAnchor(false)
+                    service.hideAll()
+                }
             }
             hideGates()
         }
