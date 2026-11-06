@@ -102,19 +102,17 @@ class OnboardingActivity : Activity() {
             permission("无障碍服务", "帮助及时识别应用切换", android.R.drawable.ic_menu_manage, { WatchAccessibilityService.connected }) {
                 openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             },
-            permission("后台运行", "显示实际管理服务运行及系统后台限制状态", android.R.drawable.ic_lock_idle_alarm,
-                { GateService.isRunning() && BackgroundStatus.isAllowed(this) },
-                activeLabel = "服务运行中", inactiveLabel = "服务未就绪") {
-                when {
-                    !BackgroundStatus.isAllowed(this) ->
-                        openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true)
-                    !GateService.isRunning() -> try {
+            permission("后台运行", "显示实际前台管理服务状态；待机后仍受电视系统限制", android.R.drawable.ic_lock_idle_alarm,
+                { GateService.isRunning() }, activeLabel = "服务运行中", inactiveLabel = "服务未运行") {
+                if (!GateService.isRunning()) {
+                    try {
                         GateService.start(this)
                         Toast.makeText(this, "已请求启动管理服务", Toast.LENGTH_SHORT).show()
                     } catch (_: RuntimeException) {
-                        Toast.makeText(this, "管理服务未能启动，请检查系统后台限制", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "管理服务未能启动，请检查电视系统后台限制", Toast.LENGTH_LONG).show()
                     }
-                    else -> Toast.makeText(this, "管理服务正常运行，系统未限制后台；待机清理仍取决于电视系统", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "前台管理服务正在运行；电视待机策略仍可能清理进程", Toast.LENGTH_LONG).show()
                 }
                 refresh()
             },
