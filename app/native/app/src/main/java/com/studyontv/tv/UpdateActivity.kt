@@ -18,6 +18,7 @@ import org.json.JSONObject
 
 
 class UpdateActivity : Activity() {
+    private var requiredUpdate = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +30,7 @@ class UpdateActivity : Activity() {
         } catch (e: Exception) {
             JSONObject()
         }
+        requiredUpdate = data.optBoolean("force", false)
         val latest = data.optString("latest", "")
         val current = data.optString("current", Updater.currentVersion(this))
         val notes = data.optString("notes", "")
@@ -45,7 +47,9 @@ class UpdateActivity : Activity() {
 
         root.addView(label(getString(R.string.app_name) + " · TV 版", 16f, 0xFFFFB020.toInt(), 4))
         root.addView(label("发现新版本 v$latest", 30f, Color.WHITE, 8))
-        root.addView(label("当前 v$current · 必须更新后才能继续使用", 16f, 0xFFA9B7CE.toInt(), 14))
+        root.addView(label(if (requiredUpdate)
+            "当前 v$current · 必须更新后才能继续使用"
+            else "当前 v$current · 可稍后更新", 16f, 0xFFA9B7CE.toInt(), 14))
 
         if (notes.isNotEmpty()) {
             root.addView(label("更新内容", 13f, 0xFF8E8E96.toInt(), 6, Gravity.START))
@@ -139,7 +143,7 @@ class UpdateActivity : Activity() {
 
     
     @Deprecated("Deprecated in Java")
-    override fun onBackPressed() = Unit
+    override fun onBackPressed() { if (!requiredUpdate) finish() }
 
     @Suppress("DEPRECATION")
     private fun immersive() {
