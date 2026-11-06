@@ -59,6 +59,11 @@ object Updater {
         }.apply { isDaemon = true }.start()
     }
 
+    /** Manual check from local admin API; called only from LanServer worker threads. */
+    fun checkNow(ctx: Context): Info? = try {
+        fetch(api(ctx))?.let { parse(it, currentVersion(ctx)) }
+    } catch (_: Exception) { null }
+
     fun cachedInfo(ctx: Context): Info? {
         val raw = Prefs.updateInfo(ctx)
         if (raw.isEmpty()) return null

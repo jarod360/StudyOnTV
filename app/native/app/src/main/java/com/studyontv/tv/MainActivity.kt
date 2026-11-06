@@ -110,7 +110,7 @@ open class MainActivity : Activity() {
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                 val now = android.os.SystemClock.elapsedRealtime()
-                upCount = if (now - lastUp < 900) upCount + 1 else 1
+                upCount = if (now - lastUp < 1600) upCount + 1 else 1
                 lastUp = now
                 if (upCount >= 5) {
                     upCount = 0
@@ -119,7 +119,7 @@ open class MainActivity : Activity() {
             } else upCount = 0
             if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && DeviceBridge.isTv(this)) {
                 val now = android.os.SystemClock.elapsedRealtime()
-                downCount = if (now - lastDown < 900) downCount + 1 else 1
+                downCount = if (now - lastDown < 1600) downCount + 1 else 1
                 lastDown = now
                 if (downCount >= 5) {
                     downCount = 0

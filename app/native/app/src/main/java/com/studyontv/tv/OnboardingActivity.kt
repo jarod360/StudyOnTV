@@ -132,10 +132,13 @@ class OnboardingActivity : Activity() {
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val next = button("进入家长设置", true) { complete(true) }
         val start = button("开始学习") { complete(false) }
+        val updates = button("检查更新") { TvUpdateEntry.check(this) }
         next.id = View.generateViewId()
         start.id = View.generateViewId()
+        updates.id = View.generateViewId()
         actions.addView(next, LinearLayout.LayoutParams(0, dp(48), 1f))
         actions.addView(start, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(12) })
+        actions.addView(updates, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(12) })
         content.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         if (tv) {
             settingButtons.forEachIndexed { i, control ->
@@ -152,7 +155,10 @@ class OnboardingActivity : Activity() {
             next.nextFocusLeftId = next.id
             next.nextFocusRightId = start.id
             start.nextFocusLeftId = next.id
-            start.nextFocusRightId = start.id
+            start.nextFocusRightId = updates.id
+            updates.nextFocusLeftId = start.id
+            updates.nextFocusRightId = updates.id
+            updates.nextFocusUpId = settingButtons.last().id
         }
         setContentView(ScrollView(this).apply {
             isFillViewport = true; isVerticalScrollBarEnabled = false; addView(outer)

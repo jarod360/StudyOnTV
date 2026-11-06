@@ -33,6 +33,13 @@ open class DeviceBridge(protected val activity: Activity, private val connection
     }
 
     @JavascriptInterface
+    fun openParentMode() {
+        activity.runOnUiThread {
+            activity.startActivity(Intent(activity, ParentModeActivity::class.java))
+        }
+    }
+
+    @JavascriptInterface
     fun exitToLauncher() {
         val status = DeviceRuntime.learning.status()
         if (!ParentMode.active(DeviceRuntime.store) &&

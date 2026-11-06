@@ -101,7 +101,11 @@ class ParentActivity : Activity() {
         }
         if (setup) content.addView(text("点击标题 5 次，或连续短按遥控器 ↑ 5 次，可重新打开此入口。", 16f))
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(content) })
-        if (DeviceBridge.isTv(this)) secret.requestFocus()
+        if (DeviceBridge.isTv(this)) {
+            secret.tvPasswordMask()
+            if (setup) confirm.tvPasswordMask()
+            secret.requestFocus()
+        }
     }
 
     private fun connection() {
@@ -130,6 +134,7 @@ class ParentActivity : Activity() {
         }
         button("权限设置") { startActivity(Intent(this, OnboardingActivity::class.java)) }
         button("修改密码") { form(true, true) }
+        button("检查更新") { TvUpdateEntry.check(this) }
         button("返回答题") { startActivity(Intent(this, MainActivity::class.java)); finish() }
         menuButtons = buttons
         buttons.forEachIndexed { i, button ->

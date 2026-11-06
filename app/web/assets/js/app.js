@@ -3,7 +3,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var all = function (selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); };
   var state = { screen: '', round: null, config: {}, learning: {}, busy: false, selected: [], version: 0, awaiting: false, reviewed: false, review: null, draft: null };
-  var toastTimer, nextTimer, taps = 0, lastTap = 0, upTaps = 0, lastUpTap = 0;
+  var toastTimer, nextTimer, taps = 0, lastTap = 0, upTaps = 0, lastUpTap = 0, downTaps = 0, lastDownTap = 0;
   function nativeCall(name, args) {
     var bridge = window.SOTVNative;
     try { if (bridge && typeof bridge[name] === 'function') return bridge[name].apply(bridge, args || []); } catch (e) {}
@@ -289,9 +289,17 @@
     });
     document.addEventListener('keydown', function (event) {
       if (event.keyCode === 38 && !event.repeat) {
-        var now = Date.now(); upTaps = now - lastUpTap < 900 ? upTaps + 1 : 1; lastUpTap = now;
+        var now = Date.now(); upTaps = now - lastUpTap < 1600 ? upTaps + 1 : 1; lastUpTap = now;
         if (upTaps >= 5) { upTaps = 0; nativeCall('openParent'); event.preventDefault(); return; }
       } else if (!event.repeat) upTaps = 0;
+      if (event.keyCode === 40 && !event.repeat) {
+        var nowDown = Date.now();
+        downTaps = nowDown - lastDownTap < 1600 ? downTaps + 1 : 1;
+        lastDownTap = nowDown;
+        if (downTaps >= 5) {
+          downTaps = 0; nativeCall('openParentMode'); event.preventDefault(); return;
+        }
+      } else if (!event.repeat) downTaps = 0;
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
       var dir = {37:'left',38:'up',39:'right',40:'down'}[event.keyCode];
       if (dir) move(dir); else if (event.keyCode === 13) activate(); else return;

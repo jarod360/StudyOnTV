@@ -145,6 +145,17 @@ class LanServer(
                         .put("repetition", store.repetitionStats())
                         .put("learning", DeviceRuntime.learning.status()))
             }
+            path == "/api/update" && method == "GET" -> {
+                val current = Updater.currentVersion(context)
+                val info = Updater.checkNow(context)
+                return json(out, 200, JSONObject()
+                    .put("current", current)
+                    .put("latest", info?.latest ?: "")
+                    .put("available", info != null && Updater.isNewer(info.latest, current))
+                    .put("url", info?.url ?: "")
+                    .put("notes", info?.notes ?: "")
+                    .put("checked", info != null))
+            }
             path == "/api/parent-mode" && method == "GET" ->
                 return json(out, 200, ParentMode.status(store).put("deviceAdminActive", DeviceAdminState.active(context)))
             path == "/api/parent-mode" && method == "POST" -> {

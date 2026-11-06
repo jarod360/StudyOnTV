@@ -17,11 +17,11 @@ import android.widget.TextView
 
 /** TV-only shortcut opened after five short DPAD_DOWN presses. */
 class ParentModeActivity : Activity() {
-    private val bg = 0xFF0D0F13.toInt()
-    private val panel = 0xFF171B21.toInt()
-    private val white = 0xFFF3F4F6.toInt()
-    private val muted = 0xFF9DA5AF.toInt()
-    private val gold = 0xFFF0AD64.toInt()
+    private val bg = 0xFFF8F9F6.toInt()
+    private val panel = 0xFFF8F9F6.toInt()
+    private val white = 0xFF303B31.toInt()
+    private val muted = 0xFF81907F.toInt()
+    private val gold = 0xFFB88948.toInt()
     private lateinit var content: LinearLayout
 
     private fun dp(n: Int) = (n * resources.displayMetrics.density).toInt()
@@ -41,13 +41,10 @@ class ParentModeActivity : Activity() {
     private fun button(value: String, action: () -> Unit): Button =
         Button(this).apply {
             text = value
-            textSize = 18f
-            isAllCaps = false
-            setTextColor(white)
-            backgroundTintList = null
+            learningStyle()
             background = StateListDrawable().apply {
-                addState(intArrayOf(android.R.attr.state_focused), shape(panel, gold))
-                addState(intArrayOf(), shape(panel, 0xFF353C46.toInt()))
+                addState(intArrayOf(android.R.attr.state_focused), shape(0xFFFFD394.toInt(), 0xFFD28B36.toInt()))
+                addState(intArrayOf(), shape(0xFFEDF1E7.toInt()))
             }
             setOnClickListener { action() }
         }
@@ -87,8 +84,7 @@ class ParentModeActivity : Activity() {
             textSize = 18f
             isSingleLine = true
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setTextColor(white)
-            setHintTextColor(muted)
+            learningField()
             tvPasswordMask()
         }
         password.id = View.generateViewId()

@@ -40,13 +40,13 @@ class GateOverlay(
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener key == KeyEvent.KEYCODE_BACK
                 if (key == KeyEvent.KEYCODE_DPAD_UP && event.repeatCount == 0) {
                     val now = android.os.SystemClock.elapsedRealtime()
-                    upCount = if (now - lastUp < 900) upCount + 1 else 1
+                    upCount = if (now - lastUp < 1600) upCount + 1 else 1
                     lastUp = now
                     if (upCount >= 5) { upCount = 0; Bridge().openParent(); return@setOnKeyListener true }
                 } else if (event.repeatCount == 0) upCount = 0
                 if (key == KeyEvent.KEYCODE_DPAD_DOWN && event.repeatCount == 0) {
                     val now = android.os.SystemClock.elapsedRealtime()
-                    downCount = if (now - lastDown < 900) downCount + 1 else 1
+                    downCount = if (now - lastDown < 1600) downCount + 1 else 1
                     lastDown = now
                     if (downCount >= 5) {
                         downCount = 0
@@ -111,7 +111,7 @@ class GateOverlay(
                 context.startActivity(Intent(context, ParentActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }
-        fun openParentMode() {
+        @JavascriptInterface fun openParentMode() {
             handler.post {
                 GateService.hideGates()
                 hide()
