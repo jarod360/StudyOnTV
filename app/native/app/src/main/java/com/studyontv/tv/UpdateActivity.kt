@@ -19,6 +19,19 @@ import org.json.JSONObject
 
 class UpdateActivity : Activity() {
     private var requiredUpdate = false
+    private var updateButton: TextView? = null
+    private var downloading = false
+
+    override fun onResume() {
+        super.onResume()
+        if (!downloading && ApkInstaller.alreadyDownloaded(this, 0)) {
+            updateButton?.apply {
+                isEnabled = true
+                text = "开始安装"
+                requestFocus()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +96,7 @@ class UpdateActivity : Activity() {
             view.scaleY = if (focused) 1.05f else 1f
         }
         go.setOnClickListener { startUpdate(url, go) }
+        updateButton = go
         root.addView(go, LinearLayout.LayoutParams(dp(320), dp(58)))
 
         root.addView(label("下载后覆盖安装即可，题库和设置不会丢", 12f, 0xFF6E8BC4.toInt(), 10))
@@ -122,6 +136,7 @@ class UpdateActivity : Activity() {
         }
 
         Prefs.setUpdateInProgress(this, true)
+        downloading = true
         button.isEnabled = false
         button.text = "下载中 0%"
         Thread {
@@ -131,6 +146,7 @@ class UpdateActivity : Activity() {
                 }
             }
             runOnUiThread {
+                downloading = false
                 if (file != null && ApkInstaller.install(this, file)) {
                     button.text = "正在安装…"
                 } else {
