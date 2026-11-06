@@ -194,6 +194,12 @@ class LanServer(
                 val id = path.removePrefix("/api/questions/")
                 return json(out, 200, JSONObject().put("ok", store.deleteQuestion(id)))
             }
+            path == "/api/learning/rollback" && method == "POST" -> {
+                val input = JSONObject(body)
+                require(input.optString("confirm") == "rollback-test-records") { "需要明确确认撤回测试记录" }
+                val result = synchronized(DeviceRuntime.learning) { store.rollbackLearningSince(input.getLong("since")) }
+                return json(out, 200, result)
+            }
             path == "/api/history" && method == "GET" -> {
                 val days = Regex("days=(\\d+)").find(query)?.groupValues?.get(1)?.toIntOrNull() ?: 7
                 return json(out, 200, JSONObject().put("items", store.historyDays(days)))

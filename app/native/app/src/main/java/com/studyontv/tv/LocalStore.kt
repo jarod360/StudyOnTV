@@ -256,6 +256,24 @@ class LocalStore(context: Context) : SQLiteOpenHelper(context, "studyontv.db", n
 
     fun deleteQuestion(id: String): Boolean = writableDatabase.delete("questions", "id=?", arrayOf(id)) > 0
 
+    /** Roll back a parent's same-day test session without changing rules or the bank. */
+    fun rollbackLearningSince(since: Long): JSONObject {
+        val start = startOfToday()
+        require(since > start && since <= System.currentTimeMillis()) { "只能撤回今天指定时间后的测试记录" }
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val removed = db.delete("events", "ts>=? AND type IN ('answer','quiz','quiz_pass','usage')", arrayOf(since.toString()))
+            val beforeTests = todayStats()
+            set("usage_day", start.toString())
+            set("used_ms", kotlin.math.round(beforeTests.getDouble("usedMinutes") * 60000).toLong().toString())
+            set("credit_ms", "0")
+            for (key in listOf("active_round", "last_answer", "review_feedback")) set(key, "")
+            db.setTransactionSuccessful()
+            return JSONObject().put("ok", true).put("removedEvents", removed).put("today", beforeTests)
+        } finally { db.endTransaction() }
+    }
+
     fun logEvent(type: String, payload: JSONObject) {
         writableDatabase.execSQL("INSERT INTO events(type,payload,ts) VALUES(?,?,?)", arrayOf(type, payload.toString(), System.currentTimeMillis()))
     }
