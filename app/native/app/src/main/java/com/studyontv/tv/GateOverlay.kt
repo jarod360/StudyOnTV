@@ -27,6 +27,8 @@ class GateOverlay(
     private var currentReason = ""
     private var upCount = 0
     private var lastUp = 0L
+    private var downCount = 0
+    private var lastDown = 0L
     val isShowing: Boolean get() = attached
 
     fun show(reason: String): Boolean {
@@ -42,6 +44,16 @@ class GateOverlay(
                     lastUp = now
                     if (upCount >= 5) { upCount = 0; Bridge().openParent(); return@setOnKeyListener true }
                 } else if (event.repeatCount == 0) upCount = 0
+                if (key == KeyEvent.KEYCODE_DPAD_DOWN && event.repeatCount == 0) {
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    downCount = if (now - lastDown < 900) downCount + 1 else 1
+                    lastDown = now
+                    if (downCount >= 5) {
+                        downCount = 0
+                        Bridge().openParentMode()
+                        return@setOnKeyListener true
+                    }
+                } else if (event.repeatCount == 0) downCount = 0
                 if (key == KeyEvent.KEYCODE_BACK) return@setOnKeyListener true
                 WebShell(context).dispatchKey(created, key, event)
             }
@@ -97,6 +109,14 @@ class GateOverlay(
                 GateService.hideGates()
                 hide()
                 context.startActivity(Intent(context, ParentActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+        }
+        fun openParentMode() {
+            handler.post {
+                GateService.hideGates()
+                hide()
+                context.startActivity(Intent(context, ParentModeActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }
         @JavascriptInterface fun exitToLauncher() {

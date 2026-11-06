@@ -16,6 +16,8 @@ open class MainActivity : Activity() {
     private var page = "quiz"
     private var upCount = 0
     private var lastUp = 0L
+    private var downCount = 0
+    private var lastDown = 0L
     private val parentHandler = Handler(Looper.getMainLooper())
     private val parentCheck = object : Runnable {
         override fun run() {
@@ -100,6 +102,16 @@ open class MainActivity : Activity() {
                     startActivity(Intent(this, ParentActivity::class.java)); return true
                 }
             } else upCount = 0
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && DeviceBridge.isTv(this)) {
+                val now = android.os.SystemClock.elapsedRealtime()
+                downCount = if (now - lastDown < 900) downCount + 1 else 1
+                lastDown = now
+                if (downCount >= 5) {
+                    downCount = 0
+                    startActivity(Intent(this, ParentModeActivity::class.java))
+                    return true
+                }
+            } else downCount = 0
         }
         if (!DeviceBridge.isTv(this) && event.keyCode == KeyEvent.KEYCODE_ENTER) return super.dispatchKeyEvent(event)
         val action = when (event.keyCode) {

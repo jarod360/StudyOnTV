@@ -67,6 +67,7 @@
             android:screenOrientation="unspecified" />
 
         <activity android:name=".ParentActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ParentModeActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name=".GateService"
