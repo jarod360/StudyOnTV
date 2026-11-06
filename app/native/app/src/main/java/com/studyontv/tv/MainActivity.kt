@@ -19,6 +19,26 @@ open class MainActivity : Activity() {
     private var downCount = 0
     private var lastDown = 0L
     private val parentHandler = Handler(Looper.getMainLooper())
+    private var offeredUpdate: String? = null
+
+    private fun checkForUpdate() {
+        if (this is GateActivity || isFinishing) return
+        Updater.check(this) { info ->
+            val newer = Updater.newerThanCurrent(this, info) ?: return@check
+            runOnUiThread {
+                if (isFinishing || isDestroyed || offeredUpdate == newer.latest) return@runOnUiThread
+                offeredUpdate = newer.latest
+                val payload = org.json.JSONObject()
+                    .put("latest", newer.latest)
+                    .put("current", Updater.currentVersion(this))
+                    .put("notes", newer.notes)
+                    .put("url", newer.url)
+                    .put("force", newer.force).toString()
+                // A native page cannot be lost while the WebView is still loading.
+                startActivity(Intent(this, UpdateActivity::class.java).putExtra("payload", payload))
+            }
+        }
+    }
     /** Parent explicitly launches the TV app during bypass: show authenticated controls. */
     private fun showParentModeIfActive(): Boolean {
         if (isFinishing || this is GateActivity || !DeviceBridge.isTv(this) ||
@@ -58,14 +78,7 @@ open class MainActivity : Activity() {
         page = if (this is GateActivity && reason != null && reason != "timeup") "lock?reason=$reason" else "quiz"
         createWeb()
         GateService.start(this)
-        if (this !is GateActivity) Updater.check(this) { info ->
-            val newer = Updater.newerThanCurrent(this, info) ?: return@check
-            runOnUiThread {
-                val raw = DeviceBridge(this).updateInfo()
-                if (newer.force) startActivity(Intent(this, UpdateActivity::class.java).putExtra("payload", raw))
-                else if (::web.isInitialized && !webReleased) web.evaluateJavascript("window.SOTV_UPDATE&&SOTV_UPDATE($raw)", null)
-            }
-        }
+        // Update checks also run onResume: the launcher may reuse this Activity.
     }
 
     private fun createWeb() {
@@ -104,6 +117,7 @@ open class MainActivity : Activity() {
         parentHandler.post(parentCheck)
         if (webReleased) createWeb()
         if (::web.isInitialized && !webReleased) web.evaluateJavascript("window.SOTV_RESUME&&SOTV_RESUME()", null)
+        checkForUpdate()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {

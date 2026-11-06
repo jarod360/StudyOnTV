@@ -25,6 +25,7 @@ class GateService : Service() {
     private var lastTick = SystemClock.elapsedRealtime()
     private var wasUsing = false
     private var lastGate = 0L
+    private val gateAudio by lazy { GateAudio(this) }
     @Volatile private var settingsUntil = 0L
     private val systemSettingsPackage by lazy {
         packageManager.resolveActivity(Intent(android.provider.Settings.ACTION_SETTINGS), 0)?.activityInfo?.packageName
@@ -70,14 +71,17 @@ class GateService : Service() {
         val feedbackVisible = hasGate() && DeviceRuntime.store.get("review_feedback").isNotEmpty()
         wasUsing = active && reason.isEmpty() && !feedbackVisible
         if (!awake || !monitoring || (reason.isEmpty() && !feedbackVisible) || (pkg != null && exempt(pkg, false))) hideAll()
+        if (protecting && reason.isNotEmpty() && hasGate()) gateAudio.pauseForGate()
         if (protecting && reason.isNotEmpty() && now - lastGate > 1800 && !hasGate()) {
             lastGate = now
             val shown = WatchAccessibilityService.showGate(reason) || (canOverlay && overlay.show(reason))
+            if (shown) gateAudio.pauseForGate()
             if (!shown && Build.VERSION.SDK_INT < 29) {
                 try {
+                    gateAudio.pauseForGate()
                     startActivity(Intent(this, GateActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra("reason", reason))
-                } catch (_: Exception) { }
+                } catch (_: Exception) { gateAudio.release() }
             }
         }
     }
@@ -99,7 +103,11 @@ class GateService : Service() {
         }
     }
 
-    private fun hideAll() { overlay.hide(); WatchAccessibilityService.hideGate() }
+    private fun hideAll() {
+        overlay.hide()
+        WatchAccessibilityService.hideGate()
+        gateAudio.release()
+    }
 
     private fun exempt(pkg: String, includeLauncher: Boolean = true): Boolean {
         if (pkg == packageName || pkg == "com.android.systemui" || pkg == "android" || pkg.contains("packageinstaller")) return true
@@ -147,13 +155,21 @@ class GateService : Service() {
         fun isRunning(): Boolean = instance != null
         fun hasGate(): Boolean = WatchAccessibilityService.hasGate() || instance?.overlay?.isShowing == true
         fun hideGates() {
-            Handler(Looper.getMainLooper()).post { instance?.overlay?.hide(); WatchAccessibilityService.hideGate() }
+            Handler(Looper.getMainLooper()).post {
+                instance?.overlay?.hide()
+                WatchAccessibilityService.hideGate()
+                instance?.gateAudio?.release()
+            }
         }
         fun onOwnActivityResumed() {
             instance?.settingsUntil = 0L
             Handler(Looper.getMainLooper()).post {
                 if (InputSupport.active) { instance?.overlay?.suspend(); WatchAccessibilityService.suspendGate() }
-                else { instance?.overlay?.hide(); WatchAccessibilityService.hideGate() }
+                else {
+                    instance?.overlay?.hide()
+                    WatchAccessibilityService.hideGate()
+                    instance?.gateAudio?.release()
+                }
             }
         }
         fun openingSystemPage() {
