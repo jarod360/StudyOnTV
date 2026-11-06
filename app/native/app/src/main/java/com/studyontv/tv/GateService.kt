@@ -62,8 +62,9 @@ class GateService : Service() {
         val awake = power.isInteractive && !locked
         val monitoring = canOverlay || WatchAccessibilityService.connected || Foreground.hasUsageAccess(this)
         val pkg = Foreground.current(this)
-        // With only overlay permission, use awake time outside our own activities.
-        val active = awake && monitoring && if (pkg == null) canOverlay else !exempt(pkg)
+        // Desktop/launcher is usable screen time too. Keep the same exemptions for
+        // charging usage and enforcing the gate; our own screens remain excluded.
+        val active = awake && monitoring && if (pkg == null) canOverlay else !exempt(pkg, false)
         val protecting = awake && monitoring && if (pkg == null) canOverlay else !exempt(pkg, false)
         val reason = DeviceRuntime.learning.status().getString("reason")
         val feedbackVisible = hasGate() && DeviceRuntime.store.get("review_feedback").isNotEmpty()

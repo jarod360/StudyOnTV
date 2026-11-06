@@ -56,7 +56,7 @@
     var seconds = Math.max(0, Number(state.learning.remainingSeconds) || 0);
     var minutes = Math.floor(seconds / 60);
     var rest = String(Math.floor(seconds % 60));
-    return '剩余使用额度 ' + minutes + ':' + (rest.length < 2 ? '0' + rest : rest) + ' · 返回桌面并进入其他应用后开始计时';
+    return '剩余使用额度 ' + minutes + ':' + (rest.length < 2 ? '0' + rest : rest) + ' · 返回桌面后开始计时（包括电视桌面）';
   }
   function start() {
     if (state.busy) return;
