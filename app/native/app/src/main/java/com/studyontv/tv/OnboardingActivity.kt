@@ -177,10 +177,24 @@ class OnboardingActivity : Activity() {
                 .setMessage("关闭后可正常卸载应用，确定解除管理员授权吗？")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("解除") { _, _ ->
-                    try { policy.removeActiveAdmin(component); refresh() }
-                    catch (_: Exception) { Toast.makeText(this, "请到系统设备管理员设置中解除", Toast.LENGTH_LONG).show() }
+                    try {
+                        policy.removeActiveAdmin(component)
+                        window.decorView.postDelayed({ refresh() }, 500)
+                    } catch (_: Exception) {
+                        Toast.makeText(this, "解除失败，请到系统设备管理员设置中解除", Toast.LENGTH_LONG).show()
+                    }
                 }.show()
         } else {
+            if (android.os.Build.MANUFACTURER.equals("Sony", true) && android.os.Build.VERSION.SDK_INT == 29) {
+                AlertDialog.Builder(this).setTitle("索尼电视管理员授权")
+                    .setMessage("此型号的系统授权页可能为空白。可在已授权的电脑上使用 ADB 开启防卸载；开启后，通过家长密码进入本页即可确认解除。\n\n灰屏时按返回键退出。")
+                    .setNegativeButton("返回", null)
+                    .setPositiveButton("尝试系统授权") { _, _ -> openDeviceAdmin(component) }.show()
+            } else openDeviceAdmin(component)
+        }
+    }
+
+    private fun openDeviceAdmin(component: ComponentName) {
             try {
                 // Remove both the gate and its 1x1 overlay anchor before OEM admin consent.
                 GateService.openingSystemPage()
@@ -190,7 +204,6 @@ class OnboardingActivity : Activity() {
             } catch (_: Exception) {
                 Toast.makeText(this, "电视不提供设备管理员授权页面，无法开启", Toast.LENGTH_LONG).show()
             }
-        }
     }
 
     private fun permission(

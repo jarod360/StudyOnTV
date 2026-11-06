@@ -174,7 +174,8 @@ class LanServer(
             path == "/api/questions" && method == "POST" -> {
                 val payload = try { JSONObject(body) } catch (e: Exception) { return json(out, 200, err("bad_json")) }
                 if (payload.has("items")) {
-                    val added = store.importQuestions(payload.getJSONArray("items"))
+                    val added = if (payload.optBoolean("replace")) store.replaceQuestionBank(payload.getJSONArray("items"))
+                        else store.importQuestions(payload.getJSONArray("items"))
                     return json(out, 200, JSONObject().put("ok", true).put("added", added))
                 }
                 return try {

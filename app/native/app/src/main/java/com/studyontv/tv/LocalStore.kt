@@ -238,6 +238,22 @@ class LocalStore(context: Context) : SQLiteOpenHelper(context, "studyontv.db", n
         return items.length()
     }
 
+    fun replaceQuestionBank(items: JSONArray): Int {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete("questions", null, null)
+            db.delete("question_progress", null, null)
+            db.delete("reviews", null, null)
+            val count = importQuestions(items)
+            for (key in listOf("active_round", "last_answer", "review_feedback")) set(key, "")
+            set("extra_pool", "0")
+            set("wrong_progress", "0")
+            db.setTransactionSuccessful()
+            return count
+        } finally { db.endTransaction() }
+    }
+
     fun deleteQuestion(id: String): Boolean = writableDatabase.delete("questions", "id=?", arrayOf(id)) > 0
 
     fun logEvent(type: String, payload: JSONObject) {
