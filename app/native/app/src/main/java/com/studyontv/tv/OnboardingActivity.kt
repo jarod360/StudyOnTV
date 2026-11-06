@@ -137,6 +137,8 @@ class OnboardingActivity : Activity() {
                 }.show()
         } else {
             try {
+                // Temporarily suspend app gating while the OEM device-admin consent UI is in front.
+                GateService.openingSystemPage()
                 startActivity(Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
                     .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
                     .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "启用后，卸载前需要先解除管理员授权。"))
