@@ -51,6 +51,13 @@
       if (callback) callback(error, result);
     });
   }
+  function watchRemaining() {
+    if (state.learning.parentModeActive) return '家长免答题中，请返回桌面';
+    var seconds = Math.max(0, Number(state.learning.remainingSeconds) || 0);
+    var minutes = Math.floor(seconds / 60);
+    var rest = String(Math.floor(seconds % 60));
+    return '剩余使用额度 ' + minutes + ':' + (rest.length < 2 ? '0' + rest : rest) + ' · 返回桌面并进入其他应用后开始计时';
+  }
   function start() {
     if (state.busy) return;
     state.busy = true;
@@ -70,7 +77,7 @@
       if (result.watching) {
         state.lockReason = '';
         show('lock'); $('lockTitle').textContent = '已解锁使用时间';
-        $('lockDesc').textContent = result.parentMode ? '家长免答题中，请返回桌面' : '还可以使用 ' + Math.ceil(state.learning.remainingSeconds / 60) + ' 分钟';
+        $('lockDesc').textContent = watchRemaining();
         $('lockIcon').textContent = '✓'; $('lockNote').textContent = '';
         $('lockActions').innerHTML = '<button class="btn btn-primary focusable" data-action="home">返回桌面</button>';
         focusDefault(); return;
@@ -321,6 +328,7 @@
       loadState(function (error) {
         if (error) return;
         if (state.awaiting) { start(); return; }
+        if (state.screen === 'lock' && !state.lockReason) $('lockDesc').textContent = watchRemaining();
         if (state.screen === 'lock' && state.lockReason !== state.learning.reason) {
           if (!state.learning.reason) start(); else lock(state.learning.reason);
           return;
