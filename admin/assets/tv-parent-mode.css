@@ -1,0 +1,19 @@
+/* TV layout only; colors, cards, icons and form components are the original dashboard's. */
+.tv-parent-mode body { font-size: 20px; }
+.tv-parent-mode .login-page { max-width: 1120px; min-height: 100vh; padding: 44px 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px 60px; align-content: center; }
+.tv-parent-mode .login-brand { grid-column: 1 / -1; font-size: 25px; }
+.tv-parent-mode .login-intro { margin: 22px 0; align-self: center; }
+.tv-parent-mode .login-intro h1 { font-size: 38px; }
+.tv-parent-mode .login-intro p { font-size: 18px; }
+.tv-parent-mode .login-card { align-self: center; }
+.tv-parent-mode .login-footer { grid-column: 1 / -1; font-size: 14px; }
+.tv-parent-mode .tv-local-host { display: none; }
+.tv-parent-mode input, .tv-parent-mode button { min-height: 54px; font-size: 20px; }
+.tv-parent-mode button:focus, .tv-parent-mode input:focus { outline: 3px solid var(--primary); outline-offset: 4px; }
+.tv-parent-controls .sotv-parent-path > :not(.sotv-parent-path):not(.sotv-focus-card) { display: none !important; }
+.tv-parent-controls .dashboard { min-height: 100vh; padding: 56px; display: flex; align-items: center; justify-content: center; }
+.tv-parent-controls .dashboard-main, .tv-parent-controls .dashboard-content { width: 100%; max-width: 1000px; margin: 0; padding: 0; }
+.tv-parent-controls .sotv-focus-card { width: 100%; }
+.tv-parent-controls .sotv-focus-card [data-slot="card-title"] { font-size: 30px; }
+.tv-parent-controls .sotv-focus-card [data-slot="card-description"] { font-size: 18px; line-height: 1.7; }
+.tv-parent-controls .sotv-focus-card button { min-width: 150px; margin: 6px; }
