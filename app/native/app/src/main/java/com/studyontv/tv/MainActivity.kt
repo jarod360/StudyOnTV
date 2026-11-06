@@ -19,6 +19,15 @@ open class MainActivity : Activity() {
     private var downCount = 0
     private var lastDown = 0L
     private val parentHandler = Handler(Looper.getMainLooper())
+    /** Parent explicitly launches the TV app during bypass: show authenticated controls. */
+    private fun showParentModeIfActive(): Boolean {
+        if (isFinishing || this is GateActivity || !DeviceBridge.isTv(this) ||
+            !ParentMode.active(DeviceRuntime.store)) return false
+        parentHandler.removeCallbacks(parentCheck)
+        startActivity(Intent(this, ParentModeActivity::class.java))
+        finish()
+        return true
+    }
     private val parentCheck = object : Runnable {
         override fun run() {
             if (isFinishing) return
@@ -39,6 +48,10 @@ open class MainActivity : Activity() {
             startActivity(Intent(this, OnboardingActivity::class.java)); finish(); return
         }
         DeviceRuntime.ensure(this)
+        if (showParentModeIfActive()) {
+            GateService.start(this)
+            return
+        }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (DeviceBridge.isTv(this)) requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         val reason = intent.getStringExtra("reason")
@@ -75,6 +88,7 @@ open class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (showParentModeIfActive()) return
         val reason = intent?.getStringExtra("reason")
         page = if (this is GateActivity && reason != null && reason != "timeup") "lock?reason=$reason" else "quiz"
         if (::web.isInitialized && !webReleased) {
@@ -85,6 +99,7 @@ open class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (showParentModeIfActive()) return
         parentHandler.removeCallbacks(parentCheck)
         parentHandler.post(parentCheck)
         if (webReleased) createWeb()
@@ -109,6 +124,7 @@ open class MainActivity : Activity() {
                 if (downCount >= 5) {
                     downCount = 0
                     startActivity(Intent(this, ParentModeActivity::class.java))
+                    finish()
                     return true
                 }
             } else downCount = 0

@@ -22,7 +22,12 @@ import android.widget.TextView
 import android.widget.Toast
 
 class OnboardingActivity : Activity() {
-    private data class PermissionRow(val status: TextView, val enabled: () -> Boolean)
+    private data class PermissionRow(
+        val status: TextView,
+        val enabled: () -> Boolean,
+        val activeLabel: String = "已开启",
+        val inactiveLabel: String = "未开启"
+    )
     private val rows = mutableListOf<PermissionRow>()
     private lateinit var modeTitle: TextView
     private lateinit var modeDescription: TextView
@@ -90,13 +95,28 @@ class OnboardingActivity : Activity() {
                 openSettings(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, true)
             },
             permission("使用情况访问", "更准确地计算应用使用时间", android.R.drawable.ic_menu_recent_history, { Foreground.hasUsageAccess(this) }) {
-                openSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                if (Foreground.hasUsageAccess(this))
+                    Toast.makeText(this, "使用情况访问已经授权", Toast.LENGTH_SHORT).show()
+                else openSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             },
             permission("无障碍服务", "帮助及时识别应用切换", android.R.drawable.ic_menu_manage, { WatchAccessibilityService.connected }) {
                 openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             },
-            permission("后台运行", "减少系统清理，适合电视常驻", android.R.drawable.ic_lock_idle_alarm, null) {
-                openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true)
+            permission("后台运行", "显示实际管理服务运行及系统后台限制状态", android.R.drawable.ic_lock_idle_alarm,
+                { GateService.isRunning() && BackgroundStatus.isAllowed(this) },
+                activeLabel = "服务运行中", inactiveLabel = "服务未就绪") {
+                when {
+                    !BackgroundStatus.isAllowed(this) ->
+                        openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true)
+                    !GateService.isRunning() -> try {
+                        GateService.start(this)
+                        Toast.makeText(this, "已请求启动管理服务", Toast.LENGTH_SHORT).show()
+                    } catch (_: RuntimeException) {
+                        Toast.makeText(this, "管理服务未能启动，请检查系统后台限制", Toast.LENGTH_LONG).show()
+                    }
+                    else -> Toast.makeText(this, "管理服务正常运行，系统未限制后台；待机清理仍取决于电视系统", Toast.LENGTH_LONG).show()
+                }
+                refresh()
             },
             permission("防卸载", "需电视确认设备管理员授权", android.R.drawable.ic_lock_lock, { adminActive() }) {
                 toggleDeviceAdmin()
@@ -148,7 +168,11 @@ class OnboardingActivity : Activity() {
         }
     }
 
-    private fun permission(title: String, description: String, icon: Int, enabled: (() -> Boolean)?, action: () -> Unit): View {
+    private fun permission(
+        title: String, description: String, icon: Int, enabled: (() -> Boolean)?,
+        activeLabel: String = "已开启", inactiveLabel: String = "未开启",
+        action: () -> Unit
+    ): View {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(16))
@@ -163,7 +187,7 @@ class OnboardingActivity : Activity() {
         copy.addView(text(description, 12f, muted), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
         val status = text(if (enabled == null) "按设备设置" else "", 12f, muted)
         copy.addView(status, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-        if (enabled != null) rows.add(PermissionRow(status, enabled))
+        if (enabled != null) rows.add(PermissionRow(status, enabled, activeLabel, inactiveLabel))
         card.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
         card.addView(button("设置", action = action), LinearLayout.LayoutParams(dp(68), dp(40)).apply { leftMargin = dp(8) })
         return card
@@ -192,7 +216,7 @@ class OnboardingActivity : Activity() {
         if (!::modeTitle.isInitialized) return
         rows.forEach {
             val enabled = it.enabled()
-            it.status.text = if (enabled) "已开启" else "未开启"
+            it.status.text = if (enabled) it.activeLabel else it.inactiveLabel
             it.status.setTextColor(if (enabled) (if (tv) 0xFFA6C892.toInt() else 0xFF6B8D57.toInt()) else muted)
         }
         val overlay = GateOverlay.canDraw(this)
