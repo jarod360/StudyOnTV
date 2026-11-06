@@ -1,7 +1,7 @@
 name: Build personal TV APK
 on:
   push:
-    branches: [feat/parent-bypass-and-device-admin]
+    branches: [main, feat/parent-bypass-and-device-admin]
   workflow_dispatch:
 jobs:
   tv:
