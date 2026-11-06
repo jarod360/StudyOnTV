@@ -46,6 +46,7 @@ class ParentActivity : Activity() {
             setTextColor(0xFF303B31.toInt()); setHintTextColor(0xFF999999.toInt())
             isSingleLine = true
             learningField()
+            tvPasswordMask()
         }
         secret.id = View.generateViewId()
         content.addView(secret)
@@ -53,6 +54,7 @@ class ParentActivity : Activity() {
             hint = "再次输入密码"; inputType = secret.inputType; isSingleLine = true
             setTextColor(0xFF303B31.toInt()); setHintTextColor(0xFF999999.toInt())
             learningField()
+            tvPasswordMask()
         }
         confirm.id = View.generateViewId()
         if (setup) content.addView(confirm)

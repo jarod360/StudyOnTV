@@ -3,6 +3,7 @@ package com.studyontv.tv
 import android.graphics.drawable.GradientDrawable
 import android.widget.Button
 import android.widget.EditText
+import android.view.inputmethod.EditorInfo
 
 fun Button.learningStyle(primary: Boolean = false) {
     val density = resources.displayMetrics.density
@@ -27,4 +28,11 @@ fun EditText.learningField() {
     setTextColor(0xFF303B31.toInt()); setHintTextColor(0xFF8B9684.toInt())
     textSize = 17f
     setPadding((14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt())
+}
+
+/** Use the same 1-second masking on Sony TV regardless of the OEM password preference. */
+fun EditText.tvPasswordMask() {
+    if (!DeviceBridge.isTv(context)) return
+    imeOptions = imeOptions or EditorInfo.IME_FLAG_NO_EXTRACT_UI
+    transformationMethod = BriefPasswordTransformation(this)
 }

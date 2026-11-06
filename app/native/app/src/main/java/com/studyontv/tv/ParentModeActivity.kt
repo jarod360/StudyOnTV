@@ -89,6 +89,7 @@ class ParentModeActivity : Activity() {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             setTextColor(white)
             setHintTextColor(muted)
+            tvPasswordMask()
         }
         password.id = View.generateViewId()
         content.addView(password, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(20) })
