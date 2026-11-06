@@ -32,10 +32,12 @@ object Foreground {
     @Suppress("DEPRECATION")
     fun current(context: Context): String? {
         ownActivity?.get()?.let {
-            if (Build.VERSION.SDK_INT < 24 || !it.isInMultiWindowMode) return it.packageName
+            if (it.hasWindowFocus() && (Build.VERSION.SDK_INT < 24 || !it.isInMultiWindowMode)) return it.packageName
         }
-        if (WatchAccessibilityService.connected) lastPackage?.let { return it }
-        if (!hasUsageAccess(context)) return null
+        val fallback = if (WatchAccessibilityService.connected) lastPackage else null
+        // Sony AirPlay may change the resumed Activity without sending an accessibility
+        // window event. Prefer the system usage record over a stale accessibility package.
+        if (!hasUsageAccess(context)) return fallback
         return try {
             val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val now = System.currentTimeMillis()
@@ -47,8 +49,8 @@ object Foreground {
                 if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) latest = event.packageName
             }
             latest ?: manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 86400000, now)
-                ?.filter { it.lastTimeUsed > 0 }?.maxByOrNull { it.lastTimeUsed }?.packageName
-        } catch (_: Exception) { null }
+                ?.filter { it.lastTimeUsed > 0 }?.maxByOrNull { it.lastTimeUsed }?.packageName ?: fallback
+        } catch (_: Exception) { fallback }
     }
 
     fun hasUsageAccess(context: Context): Boolean = try {

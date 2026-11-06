@@ -142,6 +142,10 @@ class LanServer(
                     .put("today", store.todayStats())
                     .put("questions", store.countQuestions())
                         .put("roundsDoneToday", store.roundsDoneToday())
+                        .put("monitoring", JSONObject()
+                            .put("foregroundPackage", Foreground.current(context) ?: "")
+                            .put("usageAccess", Foreground.hasUsageAccess(context))
+                            .put("accessibilityConnected", WatchAccessibilityService.connected))
                         .put("repetition", store.repetitionStats())
                         .put("learning", DeviceRuntime.learning.status()))
             }
