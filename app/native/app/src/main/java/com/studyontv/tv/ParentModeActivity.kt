@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
 import android.text.InputType
+import android.view.View
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
@@ -89,6 +90,7 @@ class ParentModeActivity : Activity() {
             setTextColor(white)
             setHintTextColor(muted)
         }
+        password.id = View.generateViewId()
         content.addView(password, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(20) })
         val error = label("", 14f, 0xFFFFB020.toInt())
         content.addView(error)
@@ -107,9 +109,17 @@ class ParentModeActivity : Activity() {
                 }.start()
             }
         }
+        verify.id = View.generateViewId()
+        val cancel = button("取消") { finish() }
+        cancel.id = View.generateViewId()
+        password.nextFocusUpId = password.id
+        password.nextFocusDownId = verify.id
+        verify.nextFocusUpId = password.id
+        verify.nextFocusDownId = cancel.id
+        cancel.nextFocusUpId = verify.id
+        cancel.nextFocusDownId = cancel.id
         content.addView(verify, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(14) })
-        content.addView(button("取消") { finish() },
-            LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(10) })
+        content.addView(cancel, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(10) })
         password.requestFocus()
     }
 
@@ -122,9 +132,10 @@ class ParentModeActivity : Activity() {
         } else "当前正常答题管控"
         content.addView(label(info, 16f, muted),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12); bottomMargin = dp(16) })
+        val actions = mutableListOf<Button>()
         listOf(60 to "免答题 1 小时", 120 to "免答题 2 小时", 240 to "免答题 4 小时",
             0 to "立即恢复管控").forEach { (minutes, title) ->
-            content.addView(button(title) {
+            val action = button(title) {
                 ParentMode.set(DeviceRuntime.store, minutes)
                 GateService.hideGates()
                 if (minutes == 0) {
@@ -134,9 +145,19 @@ class ParentModeActivity : Activity() {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
                 finish()
-            }, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(10) })
+            }
+            action.id = View.generateViewId()
+            actions.add(action)
+            content.addView(action, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(10) })
         }
-        content.addView(button("返回") { finish() }, LinearLayout.LayoutParams(-1, dp(52)))
-        content.getChildAt(2)?.requestFocus()
+        val back = button("返回") { finish() }
+        back.id = View.generateViewId()
+        actions.add(back)
+        content.addView(back, LinearLayout.LayoutParams(-1, dp(52)))
+        actions.forEachIndexed { index, action ->
+            action.nextFocusUpId = actions[(index - 1).coerceAtLeast(0)].id
+            action.nextFocusDownId = actions[(index + 1).coerceAtMost(actions.lastIndex)].id
+        }
+        actions.first().requestFocus()
     }
 }

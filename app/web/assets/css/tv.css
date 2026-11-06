@@ -341,7 +341,11 @@ body.on-lock .remote-hint { display: none; }
   background: -webkit-linear-gradient(135deg, #FFC24A, #FF6A1F);
   background: linear-gradient(135deg, #FFC24A, #FF6A1F);
 }
-.update-btn.focused { -webkit-transform: scale(1.06); transform: scale(1.06); }
+.update-btn.focused, .update-close.focused {
+  outline: 3px solid #FFB020;
+  outline-offset: 3px;
+  -webkit-transform: scale(1.06); transform: scale(1.06);
+}
 .update-close {
   margin-left: 1rem; width: 3.4rem; height: 3.4rem; border: 0; border-radius: 50%;
   background: rgba(255,255,255,.08); color: #A2A2AA; font-size: 2.2rem; line-height: 1;

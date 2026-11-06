@@ -47,12 +47,14 @@ class ParentActivity : Activity() {
             isSingleLine = true
             learningField()
         }
+        secret.id = View.generateViewId()
         content.addView(secret)
         val confirm = EditText(this).apply {
             hint = "再次输入密码"; inputType = secret.inputType; isSingleLine = true
             setTextColor(0xFF303B31.toInt()); setHintTextColor(0xFF999999.toInt())
             learningField()
         }
+        confirm.id = View.generateViewId()
         if (setup) content.addView(confirm)
         val error = text("", 14f)
         error.setTextColor(0xFFFFB020.toInt())
@@ -63,6 +65,13 @@ class ParentActivity : Activity() {
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFFB020.toInt(), 0xFFFF6A1F.toInt())).apply { cornerRadius = dp(12).toFloat() }
             setTextColor(0xFF111111.toInt())
         }
+        submit.id = View.generateViewId()
+        secret.nextFocusDownId = if (setup) confirm.id else submit.id
+        secret.nextFocusUpId = secret.id
+        confirm.nextFocusUpId = secret.id
+        confirm.nextFocusDownId = submit.id
+        submit.nextFocusUpId = if (setup) confirm.id else secret.id
+        submit.nextFocusDownId = submit.id
         content.addView(submit, LinearLayout.LayoutParams(-1, dp(56)))
         submit.setOnClickListener {
             val value = secret.text.toString()
@@ -90,6 +99,7 @@ class ParentActivity : Activity() {
         }
         if (setup) content.addView(text("点击标题 5 次，或连续短按遥控器 ↑ 5 次，可重新打开此入口。", 16f))
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(content) })
+        if (DeviceBridge.isTv(this)) secret.requestFocus()
     }
 
     private fun connection() {
@@ -138,12 +148,19 @@ class ParentActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // Sony Android TV may keep focus inside WebView; one UP returns to the native menu.
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
-            event.keyCode == KeyEvent.KEYCODE_DPAD_UP && web?.hasFocus() == true &&
-            menuButtons.isNotEmpty()) {
-            menuButtons[0].requestFocus()
-            return true
+        if (DeviceBridge.isTv(this) && event.action == KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0 && menuButtons.isNotEmpty()) {
+            val inMenu = menuButtons.any { it.hasFocus() }
+            // The WebView may consume directional navigation without ever returning focus
+            // to Android's native buttons on some Sony TVs.
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP && !inMenu) {
+                menuButtons[0].requestFocus()
+                return true
+            }
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && inMenu) {
+                web?.requestFocus()
+                return true
+            }
         }
         return super.dispatchKeyEvent(event)
     }

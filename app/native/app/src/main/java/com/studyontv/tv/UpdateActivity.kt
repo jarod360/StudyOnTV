@@ -73,13 +73,18 @@ class UpdateActivity : Activity() {
         go.gravity = Gravity.CENTER
         go.setTextColor(0xFF14100A.toInt())
         go.background = gradient(0xFFFFC24A.toInt(), 0xFFFF6A1F.toInt(), 30)
+        go.isFocusable = true
+        go.setOnFocusChangeListener { view, focused ->
+            view.scaleX = if (focused) 1.05f else 1f
+            view.scaleY = if (focused) 1.05f else 1f
+        }
         go.setOnClickListener { startUpdate(url, go) }
         root.addView(go, LinearLayout.LayoutParams(dp(320), dp(58)))
 
         root.addView(label("下载后覆盖安装即可，题库和设置不会丢", 12f, 0xFF6E8BC4.toInt(), 10))
 
         setContentView(root)
-        if (url.isEmpty()) go.isEnabled = false
+        if (url.isEmpty()) go.isEnabled = false else go.requestFocus()
         if (intent.getBooleanExtra("auto", false) && url.isNotEmpty()) {
             go.post { startUpdate(url, go) }
         }

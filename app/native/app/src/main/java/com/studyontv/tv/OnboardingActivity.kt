@@ -29,6 +29,7 @@ class OnboardingActivity : Activity() {
         val inactiveLabel: String = "未开启"
     )
     private val rows = mutableListOf<PermissionRow>()
+    private val settingButtons = mutableListOf<Button>()
     private lateinit var modeTitle: TextView
     private lateinit var modeDescription: TextView
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -130,9 +131,29 @@ class OnboardingActivity : Activity() {
         }
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val next = button("进入家长设置", true) { complete(true) }
+        val start = button("开始学习") { complete(false) }
+        next.id = View.generateViewId()
+        start.id = View.generateViewId()
         actions.addView(next, LinearLayout.LayoutParams(0, dp(48), 1f))
-        actions.addView(button("开始学习") { complete(false) }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(12) })
+        actions.addView(start, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(12) })
         content.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        if (tv) {
+            settingButtons.forEachIndexed { i, control ->
+                val column = i % columns
+                control.nextFocusUpId = if (i >= columns) settingButtons[i - columns].id else control.id
+                control.nextFocusDownId = if (i + columns < settingButtons.size)
+                    settingButtons[i + columns].id else if (column == 0) next.id else start.id
+                control.nextFocusLeftId = if (column > 0) settingButtons[i - 1].id else control.id
+                control.nextFocusRightId = if (column + 1 < columns && i + 1 < settingButtons.size)
+                    settingButtons[i + 1].id else control.id
+            }
+            next.nextFocusUpId = settingButtons.last().id
+            start.nextFocusUpId = settingButtons.last().id
+            next.nextFocusLeftId = next.id
+            next.nextFocusRightId = start.id
+            start.nextFocusLeftId = next.id
+            start.nextFocusRightId = start.id
+        }
         setContentView(ScrollView(this).apply {
             isFillViewport = true; isVerticalScrollBarEnabled = false; addView(outer)
         })
@@ -187,7 +208,10 @@ class OnboardingActivity : Activity() {
         copy.addView(status, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         if (enabled != null) rows.add(PermissionRow(status, enabled, activeLabel, inactiveLabel))
         card.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
-        card.addView(button("设置", action = action), LinearLayout.LayoutParams(dp(68), dp(40)).apply { leftMargin = dp(8) })
+        val control = button("设置", action = action)
+        control.id = View.generateViewId()
+        settingButtons.add(control)
+        card.addView(control, LinearLayout.LayoutParams(dp(68), dp(40)).apply { leftMargin = dp(8) })
         return card
     }
 

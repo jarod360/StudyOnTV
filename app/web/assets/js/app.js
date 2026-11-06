@@ -59,7 +59,7 @@
       if (error) {
         show('quiz'); $('qText').textContent = error;
         $('qOptions').innerHTML = '<button class="btn btn-primary focusable" data-action="retry">重试</button>';
-        return;
+        focusDefault(); return;
       }
       state.learning = result.status || state.learning;
       pill();
@@ -213,11 +213,13 @@
   }
   function focusables() {
     var screen = document.querySelector('.screen.active');
-    return screen ? Array.prototype.slice.call(screen.querySelectorAll('.focusable')) : [];
+    var list = screen ? Array.prototype.slice.call(screen.querySelectorAll('.focusable')) : [];
+    if ($('updateTip').classList.contains('show')) list = [$('updateGo'), $('updateClose')].concat(list);
+    return list;
   }
   function setFocus(index) {
     var list = focusables();
-    list.forEach(function (el) { el.classList.remove('focused'); });
+    all('.focused').forEach(function (el) { el.classList.remove('focused'); });
     if (list[index]) { list[index].classList.add('focused'); list[index].scrollIntoView({ block: 'nearest' }); }
   }
   function focusDefault() { if (document.documentElement.classList.contains('tv-device')) setFocus(0); }
@@ -238,6 +240,7 @@
   function activate(el) {
     if (!el) el = document.querySelector('.screen.active .focused');
     if (!el) return;
+    if (el === $('updateGo') || el === $('updateClose')) { el.click(); return; }
     if (el.hasAttribute('data-opt')) return choose(+el.getAttribute('data-opt'));
     var action = el.getAttribute('data-action');
     if (action === 'submit') submit();
@@ -263,7 +266,11 @@
     var hash = location.hash || '#/quiz';
     if (hash.indexOf('#/pair') === 0) return pair();
     loadState(function (error) {
-      if (error) { $('qText').textContent = error; return; }
+      if (error) {
+        show('quiz'); $('qText').textContent = error;
+        $('qOptions').innerHTML = '<button class="btn btn-primary focusable" data-action="retry">重试</button>';
+        focusDefault(); return;
+      }
       if (hash.indexOf('#/lock') === 0) lock(state.learning.reason || 'timeup'); else start();
     });
   }
@@ -291,7 +298,10 @@
       event.preventDefault();
     });
     $('updateGo').onclick = function () { var u = window.currentUpdate; if (u) nativeCall('installUpdate', [u.url, u.latest, u.notes || '']); };
-    $('updateClose').onclick = function () { $('updateTip').className = 'update-tip'; };
+    $('updateClose').onclick = function () {
+      $('updateTip').className = 'update-tip';
+      focusDefault();
+    };
     var info = nativeCall('deviceInfo');
     if (info && JSON.parse(info).platform === 'android-tv') document.documentElement.classList.add('tv-device');
     else if (info) { var analytics = document.createElement('script'); analytics.src = 'assets/js/analytics.js'; analytics.async = true; document.head.appendChild(analytics); }
@@ -317,7 +327,13 @@
     state.draft = { nonce: state.round.nonce, text: result.text || '', drawing: result.drawing || '' };
     renderQuestion();
   };
-  window.SOTV_UPDATE = function (info) { if (!info || !info.latest) return; window.currentUpdate = info; $('updateText').textContent = '发现新版本 v' + info.latest; $('updateTip').className = 'update-tip show'; };
+  window.SOTV_UPDATE = function (info) {
+    if (!info || !info.latest) return;
+    window.currentUpdate = info;
+    $('updateText').textContent = '发现新版本 v' + info.latest;
+    $('updateTip').className = 'update-tip show';
+    focusDefault();
+  };
   window.TV = { move: move, select: function () { activate(); }, back: function () { if (!state.learning.reason && state.learning.remainingSeconds > 0) nativeCall('exitToLauncher'); else toast('现在暂不可用'); }, state: state };
   window.SOTV_RESUME = function () { if (document.readyState === 'complete' && !state.busy && state.screen !== 'pair') route(); };
   window.addEventListener('hashchange', route);
