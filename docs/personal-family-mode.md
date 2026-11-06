@@ -18,9 +18,9 @@
 不会 Root 电视，也不是设备所有者级不可卸载。
 
 ## 构建与安装
-GitHub Actions 从 Repository secrets 读取 TV_KEYSTORE_B64（固定 PKCS12 密钥库 Base64）和 TV_KEYSTORE_PASSWORD（密钥库及密钥共用密码），密钥别名为 studyontv。缺少 Secret 时构建会明确失败，不再临时生成签名。
+GitHub Actions 固定使用仓库内 `signing/studyontv.jks` 的 PKCS12 签名密钥，别名 `studyontv`，密钥库和密钥密码均为 `android`；后续构建不会再生成新签名。此仓库为公开仓库，密钥与密码也随源码公开，使用者已明确接受此发布方式。
 成功构建后，将当前 versionName 对应的 `StudyOnTV-TV-v<versionName>.apk` 发布到本 fork 的 GitHub Releases。新版本必须同时递增 versionCode 和 versionName，且版本标签不能重复；TV 的版本检查读取 jarod360/StudyOnTV/releases/latest。
-首次迁移到固定签名仍须卸载旧临时签名版，之后可直接覆盖安装保留数据。固定签名的原文件必须另行保存备份到 D:\\Codex，丢失后仍无法沿用此身份。
+首次迁移到固定签名仍须卸载旧临时签名版，之后可直接覆盖安装保留数据。签名文件随仓库版本管理，拉取仓库即可取得相同密钥。
 先从官方版家长后台导出题库并记录设置，因为卸载会清除本地数据。
 
 卸载原版（索尼电视）：

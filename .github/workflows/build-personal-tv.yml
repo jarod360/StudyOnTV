@@ -19,29 +19,22 @@ jobs:
           gradle-version: '8.13'
       - name: Compile Android TV
         run: gradle -p app/native :app:assembleTvRelease --no-daemon
-      - name: Sign APK with fixed family key
+      - name: Sign APK with repository family key
         shell: bash
-        env:
-          TV_KEYSTORE_B64: ${{ secrets.TV_KEYSTORE_B64 }}
-          TV_KEYSTORE_PASSWORD: ${{ secrets.TV_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
-          if [[ -z "$TV_KEYSTORE_B64" || -z "$TV_KEYSTORE_PASSWORD" ]]; then
-            echo "::error::Set repository Actions secrets TV_KEYSTORE_B64 and TV_KEYSTORE_PASSWORD"
-            exit 1
-          fi
           mkdir -p dist
-          keystore="$RUNNER_TEMP/studyontv.jks"
-          printf '%s' "$TV_KEYSTORE_B64" | base64 --decode > "$keystore"
+          keystore="signing/studyontv.jks"
+          test -s "$keystore"
           version="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/native/app/build.gradle.kts | head -1)"
           test -n "$version"
           apk="StudyOnTV-TV-v${version}.apk"
           printf 'RELEASE_TAG=v%s\nAPK_FILENAME=%s\n' "$version" "$apk" >> "$GITHUB_ENV"
           tools="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
           "$tools/zipalign" -f -p 4 app/native/app/build/outputs/apk/tv/release/app-tv-release-unsigned.apk dist/aligned.apk
-          "$tools/apksigner" sign --ks "$keystore" --ks-key-alias studyontv --ks-pass env:TV_KEYSTORE_PASSWORD --key-pass env:TV_KEYSTORE_PASSWORD --out "dist/$apk" dist/aligned.apk
+          "$tools/apksigner" sign --ks "$keystore" --ks-key-alias studyontv --ks-pass pass:android --key-pass pass:android --out "dist/$apk" dist/aligned.apk
           "$tools/apksigner" verify --verbose "dist/$apk"
-          rm -f dist/aligned.apk "$keystore"
+          rm -f dist/aligned.apk
           (cd dist && sha256sum "$apk" > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
