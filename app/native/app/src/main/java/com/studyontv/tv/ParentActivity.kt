@@ -3,6 +3,8 @@ package com.studyontv.tv
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
+import android.graphics.drawable.StateListDrawable
 import android.text.InputType
 import android.view.View
 import android.widget.Button
@@ -16,6 +18,7 @@ import android.webkit.WebView
 class ParentActivity : Activity() {
     private var verified = false
     private var web: WebView? = null
+    private var menuButtons: List<Button> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +29,7 @@ class ParentActivity : Activity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun form(setup: Boolean, changing: Boolean = false) {
+        menuButtons = emptyList()
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(40), dp(24), dp(32))
@@ -91,18 +95,57 @@ class ParentActivity : Activity() {
     private fun connection() {
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(0xFFF8F9F6.toInt()) }
         val controls = LinearLayout(this)
+        val buttons = mutableListOf<Button>()
         fun button(label: String, action: () -> Unit) {
-            controls.addView(Button(this).apply { text = label; learningStyle(); setOnClickListener { action() } }, LinearLayout.LayoutParams(0, -2, 1f))
+            val item = Button(this).apply {
+                text = label
+                learningStyle()
+                id = View.generateViewId()
+                background = StateListDrawable().apply {
+                    val density = resources.displayMetrics.density
+                    fun style(fill: Int, line: Int) = GradientDrawable().apply {
+                        setColor(fill)
+                        cornerRadius = 14 * density
+                        setStroke((2 * density).toInt().coerceAtLeast(1), line)
+                    }
+                    addState(intArrayOf(android.R.attr.state_focused), style(0xFFFFD394.toInt(), 0xFFD28B36.toInt()))
+                    addState(intArrayOf(), style(0xFFEDF1E7.toInt(), 0xFFEDF1E7.toInt()))
+                }
+                setOnClickListener { action() }
+            }
+            controls.addView(item, LinearLayout.LayoutParams(0, -2, 1f))
+            buttons.add(item)
         }
         button("权限设置") { startActivity(Intent(this, OnboardingActivity::class.java)) }
         button("修改密码") { form(true, true) }
         button("返回答题") { startActivity(Intent(this, MainActivity::class.java)); finish() }
+        menuButtons = buttons
+        buttons.forEachIndexed { i, button ->
+            button.nextFocusLeftId = buttons[(i + buttons.size - 1) % buttons.size].id
+            button.nextFocusRightId = buttons[(i + 1) % buttons.size].id
+        }
         content.addView(controls)
         web = WebShell(this).create(Prefs.localBase(this) + "#/pair").also {
+            it.id = View.generateViewId()
             it.addJavascriptInterface(DeviceBridge(this, true), "SOTVNative")
+            it.nextFocusUpId = buttons[0].id
+            buttons.forEach { button -> button.nextFocusDownId = it.id }
             content.addView(it, LinearLayout.LayoutParams(-1, 0, 1f))
         }
         setContentView(content)
+        // Start in the native top row, not in the full-screen WebView.
+        buttons[0].requestFocus()
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Sony Android TV may keep focus inside WebView; one UP returns to the native menu.
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+            event.keyCode == KeyEvent.KEYCODE_DPAD_UP && web?.hasFocus() == true &&
+            menuButtons.isNotEmpty()) {
+            menuButtons[0].requestFocus()
+            return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onStop() {
