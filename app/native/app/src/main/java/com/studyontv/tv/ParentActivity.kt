@@ -63,9 +63,7 @@ class ParentActivity : Activity() {
         content.addView(error)
         val submit = Button(this).apply {
             text = if (setup) "保存密码" else "验证并打开连接页"
-            backgroundTintList = null
-            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFFB020.toInt(), 0xFFFF6A1F.toInt())).apply { cornerRadius = dp(12).toFloat() }
-            setTextColor(0xFF111111.toInt())
+            parentActionStyle(primary = true)
         }
         submit.id = View.generateViewId()
         secret.nextFocusDownId = if (setup) confirm.id else submit.id

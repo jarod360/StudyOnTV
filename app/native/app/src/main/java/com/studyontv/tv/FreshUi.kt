@@ -36,3 +36,27 @@ fun EditText.tvPasswordMask() {
     imeOptions = imeOptions or EditorInfo.IME_FLAG_NO_EXTRACT_UI
     transformationMethod = BriefPasswordTransformation(this)
 }
+
+/** Shared native TV parent button, matching ParentActivity's original orange gradient. */
+fun Button.parentActionStyle(primary: Boolean) {
+    learningStyle()
+    val density = resources.displayMetrics.density
+    fun style(active: Boolean) = GradientDrawable().apply {
+        cornerRadius = 12 * density
+        if (active) {
+            orientation = GradientDrawable.Orientation.LEFT_RIGHT
+            colors = intArrayOf(0xFFFFB020.toInt(), 0xFFFF6A1F.toInt())
+        } else setColor(0xFFEDF1E7.toInt())
+    }
+    background = android.graphics.drawable.StateListDrawable().apply {
+        addState(intArrayOf(android.R.attr.state_focused), style(true).apply {
+            setStroke((2 * density).toInt().coerceAtLeast(1), 0xFFD28B36.toInt())
+        })
+        addState(intArrayOf(android.R.attr.state_pressed), style(true))
+        addState(intArrayOf(), style(primary))
+    }
+    setTextColor(android.content.res.ColorStateList(
+        arrayOf(intArrayOf(android.R.attr.state_focused), intArrayOf()),
+        intArrayOf(0xFF111111.toInt(), if (primary) 0xFF111111.toInt() else 0xFF303B31.toInt())
+    ))
+}
