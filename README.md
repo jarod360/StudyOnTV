@@ -28,6 +28,50 @@ Android 平板、手机和电视使用同一套规则，分别安装对应版本
 
 👉 **[安装指南 → docs/install.md](./docs/install.md)**
 
+### 索尼电视：权限与 ADB
+
+以下基于 **Sony BRAVIA 4K UR3 / Android 10** 的家庭版实测；其他索尼机型和系统版本可能不同。
+
+| 权限 | 本机情况与处理方式 |
+|---|---|
+| 显示在其他应用上层 | 用于显示管控页；优先在电视设置中开启，无法操作时可尝试下方 ADB 命令 |
+| 使用情况访问 | 本机无法打开标准授权页；通过 ADB 开启后，App 可读取系统前台记录，辅助识别 AirPlay 等应用并计时 |
+| 无障碍服务 | 在电视设置中开启「StudyOnTV 屏幕时间守护」；提供前台切换通知和管控窗口。ADB 备用方法见详细说明，不能直接覆盖其他无障碍服务 |
+| 防卸载／设备管理员（可选） | 本机标准系统授权页灰屏，移除 App 悬浮窗后仍然如此；已验证可用 ADB 开启，家长验证后可在 App 权限页确认解除 |
+| 安装未知应用 | 在线更新首次安装时，为「题了个题」允许此来源；下载后由系统确认覆盖安装 |
+
+电脑使用 PowerShell，先将下面的 ADB 路径与电视地址改为自己的配置，并在电视上确认调试授权：
+
+```powershell
+$adbPath = 'D:\Codex\platform-tools\adb.exe'
+$tvAddress = '192.168.0.180:5555'
+& $adbPath connect $tvAddress
+& $adbPath devices -l
+
+# 使用情况访问：本机已实测开启成功
+& $adbPath -s $tvAddress shell appops set com.studyontv.tv GET_USAGE_STATS allow
+& $adbPath -s $tvAddress shell appops get com.studyontv.tv GET_USAGE_STATS
+
+# 悬浮窗：仅在系统页面无法正常授权时尝试；再到 App 核对状态
+& $adbPath -s $tvAddress shell appops set com.studyontv.tv SYSTEM_ALERT_WINDOW allow
+& $adbPath -s $tvAddress shell appops get com.studyontv.tv SYSTEM_ALERT_WINDOW
+
+# 防卸载：本机已实测开启成功，不是设备所有者模式
+& $adbPath -s $tvAddress shell dpm set-active-admin --user 0 com.studyontv.tv/.StudyDeviceAdminReceiver
+& $adbPath -s $tvAddress shell dumpsys device_policy
+
+# 授权后重新打开 App，让其启动管理服务并检查权限
+& $adbPath -s $tvAddress shell am start -n com.studyontv.tv/.MainActivity
+```
+
+解除防卸载：电视管控页连续短按 **↑ 5 次 → 家长密码 → 权限设置 → 防卸载 → 解除**。本机已验证可直接在 App 内解除，无需进入灰屏系统页。正式版不能把 `dpm remove-active-admin` 当作通用解除办法，该命令通常仅适用于 test-only 管理员。普通设备管理员也不等于设备所有者，不能保证永久防卸载。
+
+管控期间家长临时使用：连续短按 **↓ 5 次 → 家长密码 → 免答题 1／2／4 小时**；即使当天答题轮次用完也可使用。重新打开 App、验证后可提前恢复管控。
+
+AirPlay 已验证计时、管控止声与解除后恢复声音。索尼投屏可能不响应标准暂停，家庭版会静音兜底；**不能把静音或遮挡画面当作投屏进度真正暂停**。权限已开启也不能保证厂商待机后不清理后台。
+
+更多核对、无障碍安全启用及撤销命令见 **[索尼电视权限与 ADB 说明](./docs/sony-tv.md)**。覆盖更新须使用同一签名并保留数据，不要先卸载或清除应用数据。
+
 ---
 
 ## 它能做什么

@@ -14,7 +14,7 @@
 
 ## 防卸载
 电视上家长验证进入「权限设置 → 防卸载」，使用 Android 系统设备管理员授权。
-进入系统授权页前，暂停答题拦截并移除悬浮窗锚点；返回后恢复监控。这用于排除索尼 TV 系统授权界面灰屏的潜在遮挡原因，尚须实机验证。
+进入系统授权页前，暂停答题拦截并移除悬浮窗锚点；返回后恢复监控。Sony BRAVIA 4K UR3 / Android 10 实测中，移除锚点后系统授权页仍为空白；ADB 开启和 App 内解除已验证通过。其他机型需单独核对，详见 [索尼电视权限与 ADB 说明](./sony-tv.md)。
 如系统仍显示灰屏，普通 APK 无权静默授权；可在自己设备上使用 ADB `dpm set-active-admin --user 0 com.studyontv.tv/.StudyDeviceAdminReceiver` 激活，授权状态会由 App 自动检测。
 再次点击并确认可解除；若系统不提供授权界面则该功能不可用。
 不会 Root 电视，也不是设备所有者级不可卸载。
@@ -22,17 +22,11 @@
 ## 构建与安装
 GitHub Actions 固定使用仓库内 `signing/studyontv.jks` 的 PKCS12 签名密钥，别名 `studyontv`，密钥库和密钥密码均为 `android`；后续构建不会再生成新签名。此仓库为公开仓库，密钥与密码也随源码公开，使用者已明确接受此发布方式。
 成功构建后，将当前 versionName 对应的 `StudyOnTV-TV-v<versionName>.apk` 发布到本 fork 的 GitHub Releases。新版本必须同时递增 versionCode 和 versionName，且版本标签不能重复；TV 的版本检查读取 jarod360/StudyOnTV/releases/latest。
-首次迁移到固定签名仍须卸载旧临时签名版，之后可直接覆盖安装保留数据。签名文件随仓库版本管理，拉取仓库即可取得相同密钥。
-先从官方版家长后台导出题库并记录设置，因为卸载会清除本地数据。
-
-卸载原版（索尼电视）：
-```powershell
-& "D:\Codex\platform-tools\adb.exe" -s "192.168.0.180:5555" uninstall com.studyontv.tv
-```
+固定签名一致时可直接覆盖安装保留数据。签名文件随仓库版本管理，拉取仓库即可取得相同密钥。旧临时签名版与新包签名不一致时，不能直接保留数据覆盖安装，应停止并单独确认迁移方案，不要为了升级先卸载或清除数据。
 
 安装新包（下载 APK 到 D 盘）：
 ```powershell
-& "D:\Codex\platform-tools\adb.exe" -s "192.168.0.180:5555" install "D:\Codex\StudyOnTV-TV-family-test.apk"
+& "D:\Codex\platform-tools\adb.exe" -s "192.168.0.180:5555" install -r "D:\Codex\StudyOnTV-TV-family-test.apk"
 ```
 
 本分支仅用于个人家庭，原项目 LICENSE 禁止向第三方二次分发源码或 APK。
